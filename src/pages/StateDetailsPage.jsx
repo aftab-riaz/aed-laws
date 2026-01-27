@@ -11,32 +11,32 @@ export default function StateDetailsPage() {
   useEffect(() => {
     getStateDetails(slug)
       .then((data) => {
-        // ✅ Safe fallback with all required fields
         if (!data) {
-          data = {
-            name: slug
-              .replace(/-/g, " ")
-              .replace(/\b\w/g, (l) => l.toUpperCase()),
-            lawSummary:
-              "This state has implemented AED legislation to improve cardiac emergency response in public areas and workplaces.",
-            content:
-              "All public schools, gyms, and large businesses are required to maintain at least one automated external defibrillator (AED) on-site. AEDs must be inspected regularly and employees must receive proper training on their use. Emergency medical services (EMS) must be notified whenever an AED is deployed.",
-            lastUpdated: "August 10, 2024",
-            requirements: [
-              "AEDs required in public schools and fitness centers.",
-              "Liability protection for trained responders.",
-              "Mandatory reporting of AED use to local EMS.",
-            ],
-            fines: "$500 - $2,000 for non-compliance",
-          };
+          setError("State not found");
+          return;
         }
 
-        // ✅ Ensure requirements always exists
-        if (!Array.isArray(data.requirements)) data.requirements = [];
+        // Transform backend data to frontend format
+        const transformedData = {
+          name: data.name,
+          slug: data.slug,
+          lawSummary: data.summary || "AED law information for this state.",
+          content: data.laws && data.laws.length > 0
+            ? data.laws.map(law => `${law.title}: ${law.description}`).join('\n\n')
+            : "General AED law provisions apply to this state.",
+          lastUpdated: data.lastUpdated || "Information available",
+          requirements: data.laws && data.laws.length > 0
+            ? data.laws.map(law => law.title)
+            : [],
+          fines: data.fines || null,
+        };
 
-        setStateData(data);
+        setStateData(transformedData);
       })
-      .catch((err) => setError(err.message));
+      .catch((err) => {
+        console.error("Error fetching state details:", err);
+        setError(err.message);
+      });
   }, [slug]);
 
   if (error) return <p className="p-6 text-red-600">{error}</p>;
